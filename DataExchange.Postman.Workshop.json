@@ -1,0 +1,1383 @@
+{
+	"info": {
+		"_postman_id": "886b1341-0404-495c-bedd-df41f27389b6",
+		"name": "FDX APIs (Private Beta)",
+		"description": "This Collection contains the FDX intentful APIs.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Prep Step 0: Reset the environment variables",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.clear();",
+							"",
+							"// Please change the following variables according to your account setting",
+							"// your Forge App key",
+							"// pm.environment.set(\"client_id\",     \"your Forge client id\");",
+							"// pm.environment.set(\"client_secret\", \"your Forge client secret\");",
+							"",
+							"",
+							"// Change the following according to your ACC settings",
+							"pm.environment.set(\"hub_name\",    \"Your hub name\");",
+							"pm.environment.set(\"project_name\", \"Your project name\");",
+							"pm.environment.set(\"top_folder_name\", \"Your top folder\");",
+							"pm.environment.set(\"fdx_name\", \"Your exchange name\");",
+							"pm.environment.set(\"fdx_filter_source_name\", \"Your source revit file name\");",
+							"pm.environment.set(\"fdx_filter_create_name\", \"User name\");",
+							"",
+							"// For example:",
+							"// pm.environment.set(\"hub_name\",    \"Construction Records Testing\");",
+							"// pm.environment.set(\"project_name\", \"Data Exchange API Private Beta\");",
+							"// pm.environment.set(\"top_folder_name\", \"Project Files\");",
+							"// pm.environment.set(\"fdx_name\", \"SHARE- Floors + Roof\");",
+							"// pm.environment.set(\"fdx_filter_source_name\", \"House.rvt\");",
+							"// pm.environment.set(\"fdx_filter_create_name\", \"Zhong Wu\");",
+							"",
+							"pm.environment.set(\"base_domain\", \"https://developer.api.autodesk.com/\");",
+							"pm.environment.set(\"fdxs-url\", \"https://developer.api.autodesk.com/exchange/\");",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "VIEW",
+				"header": [],
+				"url": {
+					"raw": "{{base_domain}}/health",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Reset the following environment variables:\n1. Forge Client Key, please change to your Forge Client Id and Secret.\n2. Project name, please change to the correct project name which you want to work with.\n3. Base domain, should be https://developer.api.autodesk.com/ by default.\n4. Segment index, will be used to create multiple budget segments, should be 1 by default."
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 1: Generate 2-legged access token(Search file API requires 3 legged token)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"fdxToken\", data.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "client_id",
+							"value": "{{fdxs-client-id}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{fdxs-client-secret}}",
+							"type": "text"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "code:all data:write data:read bucket:create bucket:delete bucket:read account:write data:search",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_domain}}/authentication/v1/authenticate",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"authentication",
+						"v1",
+						"authenticate"
+					]
+				},
+				"description": "This steps accepts the client id , secret and generates the 2-legged token."
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 2: Find the specified ACC hub",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"// setup the environment variable \"hub_id\" and \"account_id\" with the 1st BIM360 hub",
+							"var responseBody = JSON.parse(responseBody);",
+							"if ( responseBody.data.length === 0){",
+							"    console.log(\"Can not find hub: \" + pm.environment.get(\"hub_name\"))",
+							"    return;",
+							"}else{",
+							"    var hub_id = responseBody.data[0].id;",
+							"    console.log(\"find hub id: \" + hub_id + \" of hub: \" + pm.environment.get(\"hub_name\"))",
+							"    pm.environment.set(\"hub_id\", hub_id);",
+							"    pm.environment.set(\"account_id\", hub_id.split('b.').join(''));",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/project/v1/hubs?filter[attributes.name]={{hub_name}}",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"project",
+						"v1",
+						"hubs"
+					],
+					"query": [
+						{
+							"key": "filter[attributes.name]",
+							"value": "{{hub_name}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 3: Find the specified project",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"if ( responseBody.data.length === 0){",
+							"    console.log(\"Can not find project: \" + pm.environment.get(\"project_name\"))",
+							"    return;",
+							"}else{",
+							"    var project_id = responseBody.data[0].id;",
+							"    console.log(\"find project id: \" + project_id + \" of project: \" + pm.environment.get(\"project_name\"))",
+							"    pm.environment.set(\"project_id\", project_id);",
+							"    pm.environment.set(\"project_id_without_b\", project_id.split('b.').join(''));",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/project/v1/hubs/{{hub_id}}/projects?page[limit]=200&filter[name]={{project_name}}",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"project",
+						"v1",
+						"hubs",
+						"{{hub_id}}",
+						"projects"
+					],
+					"query": [
+						{
+							"key": "page[limit]",
+							"value": "200"
+						},
+						{
+							"key": "filter[name]",
+							"value": "{{project_name}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 3a: [Optional] Check the project detail",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/project/v1/hubs/{{hub_id}}/projects/{{project_id}}",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"project",
+						"v1",
+						"hubs",
+						"{{hub_id}}",
+						"projects",
+						"{{project_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 4: Find the specified top folder",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"if ( responseBody.data.length === 0){",
+							"    console.log(\"Can not find top folder: \" + pm.environment.get(\"top_folder_name\"))",
+							"    return;",
+							"}else{",
+							"    var top_folder_id = responseBody.data[0].id;",
+							"    console.log(\"find top folder id: \" + top_folder_id + \" of folder: \" + pm.environment.get(\"top_folder_name\"))",
+							"    pm.environment.set(\"top_folder_id\", top_folder_id);",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/project/v1/hubs/:hub/projects/:project/topFolders?filter[attributes.name]={{top_folder_name}}",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"project",
+						"v1",
+						"hubs",
+						":hub",
+						"projects",
+						":project",
+						"topFolders"
+					],
+					"query": [
+						{
+							"key": "filter[attributes.name]",
+							"value": "{{top_folder_name}}"
+						}
+					],
+					"variable": [
+						{
+							"key": "hub",
+							"value": "{{hub_id}}"
+						},
+						{
+							"key": "project",
+							"value": "{{project_id}}"
+						}
+					]
+				},
+				"description": "Lists all buckets."
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 5: Find the folder for the specified source file(Require 3 legged token)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"if ( responseBody.data.length === 0){",
+							"    console.log(\"Can not find folder for the source file: \" + pm.environment.get(\"fdx_filter_source_name\") + \"by name: \" + pm.environment.get(\"fdx_filter_create_name\"));",
+							"    return;",
+							"}else{",
+							"    console.log(\"find source file item id: \" + responseBody.data[0].relationships.item.data.id + \" of source file: \" + pm.environment.get(\"fdx_filter_source_name\"));",
+							"    pm.environment.set(\"fdx_source_item_id\", responseBody.data[0].relationships.item.data.id);",
+							"    console.log(\"find folder id: \" + responseBody.included[0].relationships.parent.data.id + \" of source file: \" + pm.environment.get(\"fdx_filter_source_name\"));   ",
+							"    pm.environment.set(\"fdx_folder_id\", responseBody.included[0].relationships.parent.data.id);",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/data/v1/projects/:project/folders/:folder/search?filter[attributes.displayName]-contains={{fdx_filter_source_name}}&filter[attributes.createUserName]-eq={{fdx_filter_create_name}}",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"data",
+						"v1",
+						"projects",
+						":project",
+						"folders",
+						":folder",
+						"search"
+					],
+					"query": [
+						{
+							"key": "filter[attributes.displayName]-contains",
+							"value": "{{fdx_filter_source_name}}"
+						},
+						{
+							"key": "filter[attributes.createUserName]-eq",
+							"value": "{{fdx_filter_create_name}}"
+						}
+					],
+					"variable": [
+						{
+							"key": "project",
+							"value": "{{project_id}}"
+						},
+						{
+							"key": "folder",
+							"value": "{{top_folder_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 6: Find exchange item under the folder with the specified exchange name",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"const fdx_name = pm.environment.get(\"fdx_name\");",
+							"if ( responseBody.data.length === 0){",
+							"    console.log(\"Can not find FDX Item: \" + fdx_name)",
+							"    return;",
+							"} else {",
+							"    var item = responseBody.data.find(item => { return (item.attributes.displayName === fdx_name)});",
+							"    if (item !== null) {",
+							"        pm.environment.set(\"fdx_host_item_id\", item.id);",
+							"        pm.environment.set(\"exchangeFileUrn\", item.id);",
+							"        pm.environment.set(\"exchangeFileVersionUrn\", item.relationships.tip.data.id);",
+							"        console.log(\"find fdx exchange file urn(item id): \" + item.id + \" of fdx file: \" + fdx_name)",
+							"        console.log(\"find fdx exchange file tip version urn(version id): \" + item.relationships.tip.data.id + \" of fdx file: \" + fdx_name)",
+							"   }",
+							"}",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/data/v1/projects/:project/folders/:folder/contents?filter[attributes.extension.type]-contains=items:autodesk.bim360:FDX",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"data",
+						"v1",
+						"projects",
+						":project",
+						"folders",
+						":folder",
+						"contents"
+					],
+					"query": [
+						{
+							"key": "filter[attributes.extension.type]-contains",
+							"value": "items:autodesk.bim360:FDX"
+						}
+					],
+					"variable": [
+						{
+							"key": "project",
+							"value": "{{project_id}}"
+						},
+						{
+							"key": "folder",
+							"value": "{{fdx_folder_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prep Step 6a: [Optional] Check the exchange item",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_domain}}/data/v1/projects/:project/items/:item",
+					"host": [
+						"{{base_domain}}"
+					],
+					"path": [
+						"data",
+						"v1",
+						"projects",
+						":project",
+						"items",
+						":item"
+					],
+					"variable": [
+						{
+							"key": "project",
+							"value": "{{project_id}}"
+						},
+						{
+							"key": "item",
+							"value": "{{fdx_host_item_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 7a. Find exchange container with exchange file URN attribute filter",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var data = JSON.parse(responseBody).results[0];",
+							"pm.environment.set(\"exchangeContainerId\", data.id);",
+							"pm.environment.set(\"collectionId\", data.collection.id);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/exchanges?filters=attribute.exchangeFileUrn=={{exchangeFileUrn}}",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"exchanges"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "attribute.exchangeFileUrn=={{exchangeFileUrn}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 7b. Find exchange container using exchange file version URN",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var data = JSON.parse(responseBody).results[0];",
+							"pm.environment.set(\"exchangeContainerId\", data.id);",
+							"pm.environment.set(\"collectionId\", data.collection.id);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/exchanges?filters=attribute.exchangeFileVersionUrn=={{exchangeFileVersionUrn}}",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"exchanges"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "attribute.exchangeFileVersionUrn=={{exchangeFileVersionUrn}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 7c: [Optional] Check exchange details by the exchange container id",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/exchanges/{{exchangeContainerId}}",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"exchanges",
+						"{{exchangeContainerId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 8a: Find latest snapshot within an exchange container",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"pm.environment.set(\"toRevision\", responseBody.revisionId);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/snapshots:exchange",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"snapshots:exchange"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 8b: Find paginated revisions of snapshots in exchange container and set the first snapshot revision",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var responseBody = JSON.parse(responseBody);",
+							"if(responseBody.results.length === 0){",
+							"    console.log(\"Can not find any revion for this exchange\")",
+							"    return;",
+							"}else{",
+							"    //TBD: currently, the last item is the 1st revision.",
+							"    const fromRevision = responseBody.results[responseBody.results.length-1].revisionId;",
+							"    pm.environment.set(\"fromRevision\", fromRevision);",
+							"    console.log(\"find 1st snapshot revision: \" + fromRevision)",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/snapshots:exchange/revisions",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"snapshots:exchange",
+						"revisions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 9a. [Optional] Fetch parallel URLs for delta sync asset",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"cursor\", data.pagination.cursor);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:sync-urls",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"assets:sync-urls"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "cursor",
+							"value": "{{cursor}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.toRevision={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}}",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 9b. [Optional] Fetch parallel URLs for delta sync relationship",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"cursor\", data.pagination.cursor);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/relationships:sync-urls",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"relationships:sync-urls"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "cursor",
+							"value": "{{cursor}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.toRevision={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}}",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 10a. Find delta sync asset or all assets",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"",
+							"var responseBody = JSON.parse(responseBody);",
+							"pm.environment.set(\"cursor\", responseBody.pagination.cursor);",
+							"pm.environment.set(\"root_asset_id\", responseBody.root);",
+							"",
+							"const binaryAsset = responseBody.results.find( (asset)=> { return asset.type === \"autodesk.design:assets.binary-1.0.0\" } )",
+							"if(binaryAsset != null ){",
+							"    pm.environment.set(\"bin_asset_id\", binaryAsset.id);",
+							"    console.log(\"find binary asset: \"+ binaryAsset.id )",
+							"}else{",
+							"    console.log(\"find no binary asset!\")",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:sync",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"assets:sync"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "cursor",
+							"value": "{{cursor}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.toRevision=={{toRevision}}",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 10b. Find delta sync relationship or all relationships",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"cursor\", data.pagination.cursor);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/relationships:sync?filters=exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"relationships:sync"
+					],
+					"query": [
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}"
+						},
+						{
+							"key": "cursor",
+							"value": "{{cursor}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.toRevision=={{toRevision}}",
+							"disabled": true
+						},
+						{
+							"key": "filters",
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}}",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 11. Retrieve download information for some binary assets in an exchange",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", () => {",
+							"  pm.expect(pm.response.code).to.eql(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"binaries\":[\n      {\n         \"id\":\"{{bin_asset_id}}\",\n         \"contentType\":\"text/plain (Optional)\",\n         \"contentDisposition\":\"attachment; filename=test.txt ((Optional)\"\n      }\n   ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets/binaries:download",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"assets",
+						"binaries:download"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 12a: Find all assets related to each supplied starting asset(Asset Closure Query - POST)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"assetClosureQueryCursor\", data.pagination.cursor);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"startAssets\": [\n        {\n            \"assetId\": \"{{root_asset_id}}\"\n        }\n    ],\n    \"maxDepth\": 1\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:get-closure",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"assets:get-closure"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step12b: [Optional] Find more assets related to each supplied starting asset(Asset Closure Query - GET)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"assetClosureQueryCursor\", data.pagination.cursor);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{fdxToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:get-closure",
+					"host": [
+						"{{fdxs-url}}"
+					],
+					"path": [
+						"v1",
+						"collections",
+						"{{collectionId}}",
+						"exchanges",
+						"{{exchangeContainerId}}",
+						"assets:get-closure"
+					],
+					"query": [
+						{
+							"key": "cursor",
+							"value": "{{assetClosureQueryCursor}}",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "oauth2",
+		"oauth2": [
+			{
+				"key": "scope",
+				"value": "data:read bucket:read bucket:create data:write bucket:delete account:write account:read data:create",
+				"type": "string"
+			},
+			{
+				"key": "clientSecret",
+				"value": "{{fdxs-client-secret}}",
+				"type": "string"
+			},
+			{
+				"key": "clientId",
+				"value": "{{fdxs-client-id}}",
+				"type": "string"
+			},
+			{
+				"key": "accessTokenUrl",
+				"value": "https://developer.api.autodesk.com/authentication/v1/gettoken",
+				"type": "string"
+			},
+			{
+				"key": "authUrl",
+				"value": "https://developer.api.autodesk.com/authentication/v1/authorize",
+				"type": "string"
+			},
+			{
+				"key": "client_authentication",
+				"value": "body",
+				"type": "string"
+			},
+			{
+				"key": "tokenName",
+				"value": "3 Legged Token",
+				"type": "string"
+			},
+			{
+				"key": "redirect_uri",
+				"value": "https://www.getpostman.com/oauth2/callback",
+				"type": "string"
+			},
+			{
+				"key": "addTokenTo",
+				"value": "header",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
