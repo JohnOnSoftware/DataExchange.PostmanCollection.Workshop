@@ -1,13 +1,13 @@
 {
 	"info": {
 		"_postman_id": "886b1341-0404-495c-bedd-df41f27389b6",
-		"name": "FDX APIs (Private Beta)",
+		"name": "Forge Data Exchange API Workflow Demo",
 		"description": "This Collection contains the FDX intentful APIs.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "Prep Step 0: Reset the environment variables",
+			"name": "A - Prepare 1: Reset the environment variables",
 			"event": [
 				{
 					"listen": "prerequest",
@@ -21,7 +21,7 @@
 							"// pm.environment.set(\"client_secret\", \"your Forge client secret\");",
 							"",
 							"",
-							"// Change the following according to your ACC settings",
+							"Change the following according to your ACC settings",
 							"pm.environment.set(\"hub_name\",    \"Your hub name\");",
 							"pm.environment.set(\"project_name\", \"Your project name\");",
 							"pm.environment.set(\"top_folder_name\", \"Your top folder\");",
@@ -30,11 +30,11 @@
 							"pm.environment.set(\"fdx_filter_create_name\", \"User name\");",
 							"",
 							"// For example:",
-							"// pm.environment.set(\"hub_name\",    \"Construction Records Testing\");",
-							"// pm.environment.set(\"project_name\", \"Data Exchange API Private Beta\");",
-							"// pm.environment.set(\"top_folder_name\", \"Project Files\");",
-							"// pm.environment.set(\"fdx_name\", \"SHARE- Floors + Roof\");",
-							"// pm.environment.set(\"fdx_filter_source_name\", \"House.rvt\");",
+							"// pm.environment.set(\"hub_name\",               \"Developer Advocacy Support\");",
+							"// pm.environment.set(\"project_name\",           \"Data Exchange Workshop Sample Project\");",
+							"// pm.environment.set(\"top_folder_name\",        \"Project Files\");",
+							"// pm.environment.set(\"fdx_name\",               \"SimpleSample2-3D-1\");",
+							"// pm.environment.set(\"fdx_filter_source_name\", \"SimpleProject-2.rvt\");",
 							"// pm.environment.set(\"fdx_filter_create_name\", \"Zhong Wu\");",
 							"",
 							"pm.environment.set(\"base_domain\", \"https://developer.api.autodesk.com/\");",
@@ -74,74 +74,42 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 1: Generate 2-legged access token(Search file API requires 3 legged token)",
+			"name": "A - Prepare 2: Go to the folder to setup 3 legged token",
 			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 200\", () => {",
-							"  pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"var data = JSON.parse(responseBody);",
-							"pm.environment.set(\"fdxToken\", data.access_token);"
+							""
 						],
 						"type": "text/javascript"
 					}
 				}
 			],
 			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/x-www-form-urlencoded",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "urlencoded",
-					"urlencoded": [
-						{
-							"key": "client_id",
-							"value": "{{fdxs-client-id}}",
-							"type": "text"
-						},
-						{
-							"key": "client_secret",
-							"value": "{{fdxs-client-secret}}",
-							"type": "text"
-						},
-						{
-							"key": "grant_type",
-							"value": "client_credentials",
-							"type": "text"
-						},
-						{
-							"key": "scope",
-							"value": "code:all data:write data:read bucket:create bucket:delete bucket:read account:write data:search",
-							"type": "text"
-						}
-					]
-				},
+				"method": "VIEW",
+				"header": [],
 				"url": {
-					"raw": "{{base_domain}}/authentication/v1/authenticate",
+					"raw": "Just a place holder",
 					"host": [
-						"{{base_domain}}"
-					],
-					"path": [
-						"authentication",
-						"v1",
-						"authenticate"
+						"Just a place holder"
 					]
 				},
-				"description": "This steps accepts the client id , secret and generates the 2-legged token."
+				"description": "Reset the following environment variables:\n1. Forge Client Key, please change to your Forge Client Id and Secret.\n2. Project name, please change to the correct project name which you want to work with.\n3. Base domain, should be https://developer.api.autodesk.com/ by default.\n4. Segment index, will be used to create multiple budget segments, should be 1 by default."
 			},
 			"response": []
 		},
 		{
-			"name": "Prep Step 2: Find the specified ACC hub",
+			"name": "B - DM 1: Find the specified ACC hub",
 			"event": [
 				{
 					"listen": "test",
@@ -168,18 +136,12 @@
 					}
 				}
 			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/project/v1/hubs?filter[attributes.name]={{hub_name}}",
 					"host": [
@@ -201,7 +163,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 3: Find the specified project",
+			"name": "B - DM 2: Find the specified project",
 			"event": [
 				{
 					"listen": "prerequest",
@@ -238,17 +200,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/project/v1/hubs/{{hub_id}}/projects?page[limit]=200&filter[name]={{project_name}}",
 					"host": [
@@ -276,7 +229,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 3a: [Optional] Check the project detail",
+			"name": "B - DM 3: [Optional] Check the project detail",
 			"event": [
 				{
 					"listen": "prerequest",
@@ -302,17 +255,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/project/v1/hubs/{{hub_id}}/projects/{{project_id}}",
 					"host": [
@@ -331,7 +275,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 4: Find the specified top folder",
+			"name": "B - DM 4: Find the specified top folder",
 			"event": [
 				{
 					"listen": "test",
@@ -358,17 +302,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/project/v1/hubs/:hub/projects/:project/topFolders?filter[attributes.name]={{top_folder_name}}",
 					"host": [
@@ -405,7 +340,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 5: Find the folder for the specified source file(Require 3 legged token)",
+			"name": "B - DM 5: Find the folder for the specified source file",
 			"event": [
 				{
 					"listen": "test",
@@ -434,13 +369,7 @@
 			],
 			"request": {
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/data/v1/projects/:project/folders/:folder/search?filter[attributes.displayName]-contains={{fdx_filter_source_name}}&filter[attributes.createUserName]-eq={{fdx_filter_create_name}}",
 					"host": [
@@ -480,7 +409,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 6: Find exchange item under the folder with the specified exchange name",
+			"name": "B - DM 6: Find exchange item under the folder with the specified exchange name",
 			"event": [
 				{
 					"listen": "test",
@@ -514,19 +443,10 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
-					"raw": "{{base_domain}}/data/v1/projects/:project/folders/:folder/contents?filter[attributes.extension.type]-contains=items:autodesk.bim360:FDX",
+					"raw": "{{base_domain}}/data/v1/projects/:project/folders/:folder/contents",
 					"host": [
 						"{{base_domain}}"
 					],
@@ -542,7 +462,8 @@
 					"query": [
 						{
 							"key": "filter[attributes.extension.type]-contains",
-							"value": "items:autodesk.bim360:FDX"
+							"value": "items:autodesk.bim360:FDX",
+							"disabled": true
 						}
 					],
 					"variable": [
@@ -560,7 +481,7 @@
 			"response": []
 		},
 		{
-			"name": "Prep Step 6a: [Optional] Check the exchange item",
+			"name": "B - DM 6a: [Optional] Check the exchange item",
 			"event": [
 				{
 					"listen": "test",
@@ -578,17 +499,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{base_domain}}/data/v1/projects/:project/items/:item",
 					"host": [
@@ -617,7 +529,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 7a. Find exchange container with exchange file URN attribute filter",
+			"name": "C - DX 1a: Find exchange container with exchange file URN attribute filter",
 			"event": [
 				{
 					"listen": "test",
@@ -636,17 +548,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/exchanges?filters=attribute.exchangeFileUrn=={{exchangeFileUrn}}",
 					"host": [
@@ -667,7 +570,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 7b. Find exchange container using exchange file version URN",
+			"name": "C - DX 1b. Find exchange container using exchange file version URN",
 			"event": [
 				{
 					"listen": "test",
@@ -686,17 +589,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/exchanges?filters=attribute.exchangeFileVersionUrn=={{exchangeFileVersionUrn}}",
 					"host": [
@@ -717,19 +611,10 @@
 			"response": []
 		},
 		{
-			"name": "Step 7c: [Optional] Check exchange details by the exchange container id",
+			"name": "C - DX 1c: [Optional] Check exchange details by the exchange container id",
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/exchanges/{{exchangeContainerId}}",
 					"host": [
@@ -745,7 +630,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 8a: Find latest snapshot within an exchange container",
+			"name": "C - DX 2a: Find latest snapshot within an exchange container",
 			"event": [
 				{
 					"listen": "test",
@@ -763,17 +648,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/snapshots:exchange",
 					"host": [
@@ -792,7 +668,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 8b: Find paginated revisions of snapshots in exchange container and set the first snapshot revision",
+			"name": "C - DX 2b: Find paginated revisions of snapshots in exchange container and set the first snapshot revision",
 			"event": [
 				{
 					"listen": "test",
@@ -807,7 +683,7 @@
 							"    return;",
 							"}else{",
 							"    //TBD: currently, the last item is the 1st revision.",
-							"    const fromRevision = responseBody.results[responseBody.results.length-1].revisionId;",
+							"    const fromRevision = responseBody.results[responseBody.results.length-2].revisionId;",
 							"    pm.environment.set(\"fromRevision\", fromRevision);",
 							"    console.log(\"find 1st snapshot revision: \" + fromRevision)",
 							"}",
@@ -818,17 +694,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/snapshots:exchange/revisions",
 					"host": [
@@ -848,7 +715,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 9a. [Optional] Fetch parallel URLs for delta sync asset",
+			"name": "C - DX 3a. [Optional] Fetch parallel URLs for delta sync asset",
 			"event": [
 				{
 					"listen": "test",
@@ -865,29 +732,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					},
-					{
-						"key": "",
-						"value": "",
-						"type": "text",
-						"disabled": true
-					},
-					{
-						"key": "",
-						"value": "",
-						"type": "text",
-						"disabled": true
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:sync-urls",
 					"host": [
@@ -928,7 +774,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 9b. [Optional] Fetch parallel URLs for delta sync relationship",
+			"name": "C - DX 3b. [Optional] Fetch parallel URLs for delta sync relationship",
 			"event": [
 				{
 					"listen": "test",
@@ -945,17 +791,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/relationships:sync-urls",
 					"host": [
@@ -996,7 +833,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 10a. Find delta sync asset or all assets",
+			"name": "C - DX 4a. Find delta sync asset or all assets",
 			"event": [
 				{
 					"listen": "test",
@@ -1010,6 +847,7 @@
 							"var responseBody = JSON.parse(responseBody);",
 							"pm.environment.set(\"cursor\", responseBody.pagination.cursor);",
 							"pm.environment.set(\"root_asset_id\", responseBody.root);",
+							"pm.environment.set(\"asset_id\", responseBody.root);",
 							"",
 							"const binaryAsset = responseBody.results.find( (asset)=> { return asset.type === \"autodesk.design:assets.binary-1.0.0\" } )",
 							"if(binaryAsset != null ){",
@@ -1023,32 +861,14 @@
 					}
 				}
 			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					},
-					{
-						"key": "",
-						"value": "",
-						"type": "text",
-						"disabled": true
-					},
-					{
-						"key": "",
-						"value": "",
-						"type": "text",
-						"disabled": true
-					}
-				],
+				"header": [],
 				"url": {
-					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:sync",
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:sync?filters=exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
 					"host": [
 						"{{fdxs-url}}"
 					],
@@ -1063,8 +883,7 @@
 					"query": [
 						{
 							"key": "filters",
-							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
-							"disabled": true
+							"value": "exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}"
 						},
 						{
 							"key": "cursor",
@@ -1087,7 +906,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 10b. Find delta sync relationship or all relationships",
+			"name": "C - DX 4b. Find delta sync relationship or all relationships",
 			"event": [
 				{
 					"listen": "test",
@@ -1104,17 +923,8 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/relationships:sync?filters=exchange.snapshot.fromRevision=={{fromRevision}};exchange.snapshot.toRevision=={{toRevision}}",
 					"host": [
@@ -1154,7 +964,7 @@
 			"response": []
 		},
 		{
-			"name": "Step 11. Retrieve download information for some binary assets in an exchange",
+			"name": "C - DX 5. Retrieve download information for some binary assets in an exchange",
 			"event": [
 				{
 					"listen": "test",
@@ -1168,16 +978,17 @@
 					}
 				}
 			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "POST",
 				"header": [
 					{
 						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
+						"value": "Bearer {{access_token}}",
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"body": {
@@ -1208,34 +1019,41 @@
 			"response": []
 		},
 		{
-			"name": "Step 12a: Find all assets related to each supplied starting asset(Asset Closure Query - POST)",
+			"name": "C - DX 6a: Find all assets related to each supplied starting asset(Asset Closure Query - POST)",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
 							"var data = JSON.parse(responseBody);",
+							"const asset_id = data.topology.edges[0].toNode;",
+							"if( asset_id != null ){",
+							"    pm.environment.set(\"asset_id\", asset_id);",
+							"    console.log('find one referenced node: '+ asset_id);",
+							"}else{",
+							"    console.log('find no referenced node.');",
+							"}",
+							"    ",
 							"pm.environment.set(\"assetClosureQueryCursor\", data.pagination.cursor);"
 						],
 						"type": "text/javascript"
 					}
 				}
 			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true,
+					"accept-encoding": true,
+					"connection": true,
+					"user-agent": true
+				}
+			},
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "POST",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"startAssets\": [\n        {\n            \"assetId\": \"{{root_asset_id}}\"\n        }\n    ],\n    \"maxDepth\": 1\n}",
+					"raw": "{\n    \"startAssets\": [\n        {\n            \"assetId\": \"{{asset_id}}\"\n        }\n    ]// ,\n    // \"maxDepth\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -1260,7 +1078,7 @@
 			"response": []
 		},
 		{
-			"name": "Step12b: [Optional] Find more assets related to each supplied starting asset(Asset Closure Query - GET)",
+			"name": "C - DX 6b: [Optional] Find more assets related to each supplied starting asset(Asset Closure Query - GET)",
 			"event": [
 				{
 					"listen": "test",
@@ -1274,19 +1092,10 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{fdxToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
-					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:get-closure",
+					"raw": "{{fdxs-url}}/v1/collections/{{collectionId}}/exchanges/{{exchangeContainerId}}/assets:get-closure?cursor={{assetClosureQueryCursor}}",
 					"host": [
 						"{{fdxs-url}}"
 					],
@@ -1301,8 +1110,7 @@
 					"query": [
 						{
 							"key": "cursor",
-							"value": "{{assetClosureQueryCursor}}",
-							"disabled": true
+							"value": "{{assetClosureQueryCursor}}"
 						}
 					]
 				}
@@ -1314,18 +1122,18 @@
 		"type": "oauth2",
 		"oauth2": [
 			{
-				"key": "scope",
-				"value": "data:read bucket:read bucket:create data:write bucket:delete account:write account:read data:create",
+				"key": "clientId",
+				"value": "{{client_id}}",
 				"type": "string"
 			},
 			{
 				"key": "clientSecret",
-				"value": "{{fdxs-client-secret}}",
+				"value": "{{client_secret}}",
 				"type": "string"
 			},
 			{
-				"key": "clientId",
-				"value": "{{fdxs-client-id}}",
+				"key": "scope",
+				"value": "data:read bucket:read bucket:create data:write bucket:delete account:write account:read data:create",
 				"type": "string"
 			},
 			{
